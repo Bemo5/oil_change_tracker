@@ -25,3 +25,5 @@ Future<String?> copyPickedImage(String pickedPath) async {
     return null;
   }
 }
+
+Future<String?> pickImageAsDataUri() async => null;

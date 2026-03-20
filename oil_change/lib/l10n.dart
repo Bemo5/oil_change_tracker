@@ -103,6 +103,7 @@ class S {
   static String get deleteRecordQ => isArabic.value ? 'حذف السجل؟' : 'Delete record?';
   static String get deleteRecordMsg => isArabic.value ? 'حذف هذا السجل؟' : 'Delete this history entry?';
   static String get undo => isArabic.value ? 'تراجع' : 'Undo';
+  static String get search => isArabic.value ? 'بحث...' : 'Search...';
 
   // -- Reset --
   static String get resetAllData => isArabic.value ? 'مسح جميع البيانات' : 'Reset all data';

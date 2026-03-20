@@ -9,6 +9,7 @@ import '../data/maintenance_item.dart';
 import '../data/maintenance_item_repo.dart';
 import '../data/maintenance_record.dart';
 import '../data/maintenance_record_repo.dart';
+import '../data/maintenance_type.dart';
 import '../data/maintenance_type_repo.dart';
 
 class VehicleDetailPage extends StatefulWidget {
@@ -50,7 +51,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     setState(() {});
   }
 
-  // ── Add item: pick from existing types or create custom ──
+  // ── Add item ──
 
   Future<void> _addItem() async {
     final existingItems = _itemRepo.getForVehicle(_vehicle.id);
@@ -63,7 +64,17 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     final result = await showModalBottomSheet<_AddItemResult>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => _AddItemSheet(availableTypes: availableTypes),
+      useSafeArea: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollCtrl) => _AddItemSheet(
+          availableTypes: availableTypes,
+          scrollController: scrollCtrl,
+        ),
+      ),
     );
 
     if (result == null) return;
@@ -79,7 +90,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     setState(() {});
   }
 
-  // ── Remove item with confirmation ──
+  // ── Remove item ──
 
   Future<void> _removeItem(MaintenanceItem item) async {
     final ok = await showDialog<bool>(
@@ -109,7 +120,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${item.typeName} — ${S.editInterval}'),
+        title: Text('${item.typeName}\n${S.editInterval}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -182,7 +193,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
 
     if (price == null) return;
-
     final actualPrice = price < 0 ? null : price;
 
     await _itemRepo.markDone(item, _vehicle.currentOdometerKm, priceEgp: actualPrice);
@@ -217,9 +227,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   // ── Status helpers ──
 
-  int _remainingKm(MaintenanceItem item) {
-    return (item.savedOdometerKm + item.intervalKm) - _vehicle.currentOdometerKm;
-  }
+  int _remainingKm(MaintenanceItem item) =>
+      (item.savedOdometerKm + item.intervalKm) - _vehicle.currentOdometerKm;
 
   double _progressUsed(MaintenanceItem item) {
     final interval = item.intervalKm <= 0 ? 1 : item.intervalKm;
@@ -329,24 +338,16 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                       children: [
                         Icon(Icons.check_circle_outline, size: 18, color: cs.primary),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(r.typeName, style: tt.bodyMedium),
-                        ),
+                        Expanded(child: Text(r.typeName, style: tt.bodyMedium)),
                         if (r.priceEgp != null)
-                          Text(
-                            '${r.priceEgp!.toStringAsFixed(0)} EGP',
-                            style: tt.bodySmall?.copyWith(color: cs.primary),
-                          ),
+                          Text('${r.priceEgp!.toStringAsFixed(0)} EGP',
+                              style: tt.bodySmall?.copyWith(color: cs.primary)),
                         if (r.priceEgp != null) const SizedBox(width: 10),
-                        Text(
-                          '${r.odometerKm} km',
-                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                        ),
+                        Text('${r.odometerKm} km',
+                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                         const SizedBox(width: 10),
-                        Text(
-                          DateFormat('d MMM yy').format(r.date),
-                          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                        ),
+                        Text(DateFormat('d MMM yy').format(r.date),
+                            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                       ],
                     ),
                   ),
@@ -380,7 +381,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           Row(
             children: [
               Expanded(
-                child: Text(item.typeName, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(item.typeName,
+                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -388,7 +390,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   color: sColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(s.label, style: TextStyle(color: sColor, fontWeight: FontWeight.w800, fontSize: 11)),
+                child: Text(s.label,
+                    style: TextStyle(color: sColor, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
             ],
           ),
@@ -411,16 +414,12 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               ),
               const Spacer(),
               if (item.lastPriceEgp != null)
-                Text(
-                  '${item.lastPriceEgp!.toStringAsFixed(0)} EGP',
-                  style: tt.bodySmall?.copyWith(color: cs.primary),
-                ),
+                Text('${item.lastPriceEgp!.toStringAsFixed(0)} EGP',
+                    style: tt.bodySmall?.copyWith(color: cs.primary)),
               if (item.lastPriceEgp != null) const SizedBox(width: 10),
               if (item.lastServiceDate != null)
-                Text(
-                  DateFormat('d MMM yy').format(item.lastServiceDate!),
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                ),
+                Text(DateFormat('d MMM yy').format(item.lastServiceDate!),
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
             ],
           ),
           const SizedBox(height: 8),
@@ -441,8 +440,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               ),
               const SizedBox(width: 6),
               SizedBox(
-                width: 34,
-                height: 34,
+                width: 34, height: 34,
                 child: IconButton(
                   onPressed: () => _editInterval(item),
                   icon: const Icon(Icons.tune, size: 18),
@@ -451,8 +449,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
               ),
               SizedBox(
-                width: 34,
-                height: 34,
+                width: 34, height: 34,
                 child: IconButton(
                   onPressed: () => _removeItem(item),
                   icon: const Icon(Icons.close, size: 18),
@@ -469,23 +466,18 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 }
 
 enum _Status {
-  ok,
-  due,
-  overdue;
+  ok, due, overdue;
 
   String get label {
     switch (this) {
-      case _Status.ok:
-        return S.statusOk;
-      case _Status.due:
-        return S.statusDue;
-      case _Status.overdue:
-        return S.statusOverdue;
+      case _Status.ok: return S.statusOk;
+      case _Status.due: return S.statusDue;
+      case _Status.overdue: return S.statusOverdue;
     }
   }
 }
 
-// ── Bottom sheet for adding items ──
+// ── Add item result ──
 
 class _AddItemResult {
   final String typeId;
@@ -495,86 +487,165 @@ class _AddItemResult {
   _AddItemResult({required this.typeId, required this.name, required this.intervalKm, required this.intervalMonths});
 }
 
+// ── Categorized + searchable bottom sheet ──
+
 class _AddItemSheet extends StatefulWidget {
-  final List availableTypes;
-  const _AddItemSheet({required this.availableTypes});
+  final List<MaintenanceType> availableTypes;
+  final ScrollController scrollController;
+  const _AddItemSheet({required this.availableTypes, required this.scrollController});
 
   @override
   State<_AddItemSheet> createState() => _AddItemSheetState();
 }
 
 class _AddItemSheetState extends State<_AddItemSheet> {
+  String _query = '';
   bool _showCustom = false;
+  final _searchCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _kmCtrl = TextEditingController(text: '5000');
   final _monthsCtrl = TextEditingController(text: '6');
 
   @override
   void dispose() {
+    _searchCtrl.dispose();
     _nameCtrl.dispose();
     _kmCtrl.dispose();
     _monthsCtrl.dispose();
     super.dispose();
   }
 
+  List<MaintenanceType> get _filtered {
+    if (_query.isEmpty) return widget.availableTypes;
+    final q = _query.toLowerCase();
+    return widget.availableTypes.where((t) =>
+        t.name.toLowerCase().contains(q) ||
+        t.category.toLowerCase().contains(q)).toList();
+  }
+
+  // Group by category, preserving order
+  Map<String, List<MaintenanceType>> get _grouped {
+    final map = <String, List<MaintenanceType>>{};
+    for (final t in _filtered) {
+      final cat = t.category.isEmpty ? 'أخرى / Other' : t.category;
+      map.putIfAbsent(cat, () => []).add(t);
+    }
+    return map;
+  }
+
+  static const _catIcons = <String, IconData>{
+    'زيوت وسوائل / Oils & Fluids': Icons.water_drop,
+    'فلاتر / Filters': Icons.filter_alt,
+    'نظام الاشتعال / Ignition': Icons.bolt,
+    'فرامل / Brakes': Icons.do_not_touch,
+    'إطارات وعفشة / Tires & Suspension': Icons.tire_repair,
+    'كهرباء وسيور / Electrical & Belts': Icons.electrical_services,
+    'نظام التبريد / Cooling': Icons.ac_unit,
+    'أخرى / Other': Icons.build,
+  };
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SafeArea(
-        child: _showCustom ? _buildCustomForm(cs, tt) : _buildTypeList(cs, tt),
-      ),
-    );
-  }
+    if (_showCustom) return _buildCustomForm(cs, tt);
 
-  Widget _buildTypeList(ColorScheme cs, TextTheme tt) {
+    final grouped = _grouped;
+
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 12),
-        Container(width: 40, height: 4, decoration: BoxDecoration(color: cs.onSurfaceVariant.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-        const SizedBox(height: 16),
+        Center(child: Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: cs.onSurfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2)))),
+        const SizedBox(height: 12),
         Text(S.addItem, style: tt.titleMedium),
         const SizedBox(height: 12),
 
-        if (widget.availableTypes.isNotEmpty)
-          ...widget.availableTypes.map((t) => ListTile(
-                leading: const Icon(Icons.build_outlined),
-                title: Text(t.name),
-                subtitle: Text('${t.defaultIntervalKm} km / ${t.defaultIntervalMonths} mo'),
-                onTap: () => Navigator.pop(context, _AddItemResult(
-                  typeId: t.id,
-                  name: t.name,
-                  intervalKm: t.defaultIntervalKm,
-                  intervalMonths: t.defaultIntervalMonths,
-                )),
-              )),
-
-        const Divider(),
-        ListTile(
-          leading: const Icon(Icons.add_circle_outline),
-          title: Text(S.customItem),
-          onTap: () => setState(() => _showCustom = true),
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TextField(
+            controller: _searchCtrl,
+            decoration: InputDecoration(
+              hintText: S.search,
+              prefixIcon: const Icon(Icons.search),
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+            onChanged: (v) => setState(() => _query = v),
+          ),
         ),
         const SizedBox(height: 8),
+
+        // Categorized list
+        Expanded(
+          child: ListView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+            children: [
+              ...grouped.entries.expand((entry) => [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+                  child: Row(
+                    children: [
+                      Icon(_catIcons[entry.key] ?? Icons.build, size: 18, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Text(entry.key, style: tt.labelLarge?.copyWith(
+                          color: cs.primary, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                ...entry.value.map((t) => ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  title: Text(t.name, style: tt.bodyMedium),
+                  subtitle: Text('${t.defaultIntervalKm} كم / ${t.defaultIntervalMonths} شهر',
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  onTap: () => Navigator.pop(context, _AddItemResult(
+                    typeId: t.id,
+                    name: t.name,
+                    intervalKm: t.defaultIntervalKm,
+                    intervalMonths: t.defaultIntervalMonths,
+                  )),
+                )),
+              ]),
+
+              const Divider(height: 24),
+              ListTile(
+                leading: Icon(Icons.add_circle_outline, color: cs.primary),
+                title: Text(S.customItem, style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                onTap: () => setState(() => _showCustom = true),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildCustomForm(ColorScheme cs, TextTheme tt) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 4),
-          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: cs.onSurfaceVariant.withOpacity(0.3), borderRadius: BorderRadius.circular(2)))),
+          Center(child: Container(width: 40, height: 4,
+              decoration: BoxDecoration(color: cs.onSurfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 16),
-          Text(S.customItem, style: tt.titleMedium),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() => _showCustom = false),
+              ),
+              Text(S.customItem, style: tt.titleMedium),
+            ],
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
@@ -616,7 +687,6 @@ class _AddItemSheetState extends State<_AddItemSheet> {
             },
             child: Text(S.add),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );

@@ -51,25 +51,28 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
   int _parseInt(String s, int fallback) => int.tryParse(s.trim()) ?? fallback;
 
   Future<void> _pickPhoto() async {
-    if (kIsWeb) return; // Photos not supported on web
+    if (kIsWeb) {
+      // On web, pick and store as data: URI
+      final dataUri = await form_platform.pickImageAsDataUri();
+      if (dataUri == null || !mounted) return;
+      setState(() => _photoPath = dataUri);
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: false,
+      );
 
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-      withData: false,
-    );
+      if (result == null || result.files.isEmpty) return;
 
-    if (result == null || result.files.isEmpty) return;
+      final pickedPath = result.files.single.path;
+      if (pickedPath == null) return;
 
-    final pickedPath = result.files.single.path;
-    if (pickedPath == null) return;
+      final copiedPath = await form_platform.copyPickedImage(pickedPath);
 
-    final copiedPath = await form_platform.copyPickedImage(pickedPath);
-
-    if (!mounted) return;
-    setState(() {
-      _photoPath = copiedPath ?? pickedPath;
-    });
+      if (!mounted) return;
+      setState(() => _photoPath = copiedPath ?? pickedPath);
+    }
   }
 
   Future<void> _save() async {
@@ -102,11 +105,46 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
     Navigator.of(context).pop();
   }
 
+  Widget _buildPhotoWidget() {
+    final radius = BorderRadius.circular(16);
+    final hasPhoto = _photoPath != null &&
+        _photoPath!.isNotEmpty &&
+        pu.fileExists(_photoPath!);
+
+    return InkWell(
+      borderRadius: radius,
+      onTap: _pickPhoto,
+      child: Container(
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        ),
+        child: hasPhoto
+            ? ClipRRect(
+                borderRadius: radius,
+                child: pu.fileImage(
+                  _photoPath!,
+                  width: 96,
+                  height: 96,
+                  fit: BoxFit.cover,
+                  fallback: () => const Icon(Icons.add_a_photo, size: 30),
+                ),
+              )
+            : const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_a_photo, size: 28),
+                  SizedBox(height: 4),
+                ],
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(16);
-    final hasPhoto = _photoPath != null && pu.fileExists(_photoPath!);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? S.editVehicle : S.addVehicle),
@@ -118,39 +156,15 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
           key: _formKey,
           child: ListView(
             children: [
-              if (!kIsWeb)
-                Row(
-                  children: [
-                    InkWell(
-                      borderRadius: radius,
-                      onTap: _pickPhoto,
-                      child: Ink(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          borderRadius: radius,
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        ),
-                        child: hasPhoto
-                            ? ClipRRect(
-                                borderRadius: radius,
-                                child: pu.fileImage(
-                                  _photoPath!,
-                                  fit: BoxFit.cover,
-                                  fallback: () => const Icon(Icons.image_not_supported),
-                                ),
-                              )
-                            : const Icon(Icons.add_a_photo, size: 30),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(S.photoOptional),
-                    ),
-                  ],
-                ),
+              Row(
+                children: [
+                  _buildPhotoWidget(),
+                  const SizedBox(width: 14),
+                  Expanded(child: Text(S.photoOptional)),
+                ],
+              ),
 
-              if (!kIsWeb) const SizedBox(height: 18),
+              const SizedBox(height: 18),
 
               TextFormField(
                 controller: _nameCtrl,
