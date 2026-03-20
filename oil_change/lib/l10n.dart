@@ -88,4 +88,17 @@ class S {
       isArabic.value ? 'سيتم استبدال جميع البيانات الحالية.' : 'This will replace ALL current data.';
   static String get importedOk => isArabic.value ? 'تم الاستيراد بنجاح' : 'Imported successfully';
   static String get exportedOk => isArabic.value ? 'تم التصدير' : 'Exported';
+
+  // -- Detail page extras --
+  static String get addItem => isArabic.value ? 'إضافة عنصر صيانة' : 'Add maintenance item';
+  static String get pickType => isArabic.value ? 'اختر نوع الصيانة' : 'Pick a type';
+  static String get customItem => isArabic.value ? 'عنصر مخصص' : 'Custom item';
+  static String get removeItem => isArabic.value ? 'إزالة العنصر؟' : 'Remove item?';
+  static String removeItemMsg(String name) =>
+      isArabic.value ? 'إزالة "$name" من هذه المركبة؟' : 'Remove "$name" from this vehicle?';
+  static String get removed => isArabic.value ? 'تم الحذف' : 'Removed';
+  static String get editInterval => isArabic.value ? 'تعديل الفترة' : 'Edit interval';
+  static String get deleteRecordQ => isArabic.value ? 'حذف السجل؟' : 'Delete record?';
+  static String get deleteRecordMsg => isArabic.value ? 'حذف هذا السجل؟' : 'Delete this history entry?';
+  static String get undo => isArabic.value ? 'تراجع' : 'Undo';
 }

@@ -78,6 +78,10 @@ class MaintenanceItemRepo {
     await _box().put(item.id, item.toMap());
   }
 
+  Future<void> delete(String id) async {
+    await _box().delete(id);
+  }
+
   Future<void> deleteForVehicle(String vehicleId) async {
     final box = _box();
     final keys = box.keys.where((key) {

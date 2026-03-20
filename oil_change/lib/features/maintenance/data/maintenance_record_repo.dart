@@ -54,6 +54,10 @@ class MaintenanceRecordRepo {
     await box.deleteAll(keys);
   }
 
+  Future<void> delete(String id) async {
+    await _box().delete(id);
+  }
+
   Future<void> deleteByTypeId(String typeId) async {
     final box = _box();
     final keys = box.keys.where((key) {
