@@ -93,11 +93,22 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
         photoPath: _photoPath,
       );
 
+      // Only auto-add the most essential items
       final types = MaintenanceTypeRepo().getAllSync();
+      final essentials = [
+        'زيت المحرك',
+        'فلتر زيت',
+        'فلتر هواء',
+        'تيل فرامل',
+        'كاوتش',
+        'بطارية',
+      ];
+      final starterTypes = types.where((t) =>
+          essentials.any((e) => t.name.startsWith(e))).toList();
       await MaintenanceItemRepo().addAllTypesForVehicle(
         vehicle.id,
         odometer,
-        types,
+        starterTypes,
       );
     }
 

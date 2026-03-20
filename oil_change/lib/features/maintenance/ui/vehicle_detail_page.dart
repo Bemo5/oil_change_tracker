@@ -266,7 +266,13 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final items = _itemRepo.getForVehicle(_vehicle.id);
+    final items = _itemRepo.getForVehicle(_vehicle.id)
+      ..sort((a, b) {
+        final sa = _status(a).index;
+        final sb = _status(b).index;
+        if (sa != sb) return sb.compareTo(sa); // overdue first
+        return _remainingKm(a).compareTo(_remainingKm(b));
+      });
     final history = _recordRepo.getForVehicle(_vehicle.id);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
