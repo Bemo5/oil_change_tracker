@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../l10n.dart';
@@ -110,11 +111,11 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
     await _recordRepo.deleteByTypeId(t.id);
   }
 
-  // ── Copy to clipboard (easiest on iPhone) ──
+  // ── Copy to clipboard using Flutter's Clipboard ──
   Future<void> _copyToClipboard() async {
     try {
       final json = _backup.exportToJson();
-      await platform.exportToClipboard(json);
+      await Clipboard.setData(ClipboardData(text: json));
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.copiedOk)));
@@ -140,14 +141,24 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
     if (confirm != true) return;
 
     try {
-      final json = await platform.importFromClipboard();
-      if (json == null) {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text;
+      if (text == null || text.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.invalidData)));
         return;
       }
 
-      await _backup.importFromJson(json);
+      // Validate it's JSON
+      try {
+        jsonDecode(text);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.invalidData)));
+        return;
+      }
+
+      await _backup.importFromJson(text);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.importedOk)));
