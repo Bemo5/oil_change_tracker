@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'features/vehicles/data/hive_boxes.dart';
 
-/// Simple AR/EN localization. No packages needed.
+/// Simple AR/EN localization. Defaults to Arabic.
 class S {
-  static final ValueNotifier<bool> isArabic = ValueNotifier(false);
+  static final ValueNotifier<bool> isArabic = ValueNotifier(true);
 
   static void init() {
-    isArabic.value = HiveBoxes.metaBox().get('lang') == 'ar';
+    final saved = HiveBoxes.metaBox().get('lang');
+    // Default to Arabic if no language was saved
+    isArabic.value = saved == null ? true : saved == 'ar';
   }
 
   static void toggle() {
@@ -27,7 +29,7 @@ class S {
   // -- Home --
   static String get noVehiclesYet => isArabic.value ? 'لا توجد مركبات' : 'No vehicles yet';
   static String get tapToAdd => isArabic.value ? 'اضغط + للإضافة' : 'Tap + to add one';
-  static String get allOk => isArabic.value ? 'كل شيء تمام' : 'All OK';
+  static String get allOk => isArabic.value ? 'كل شيء تمام ✓' : 'All OK ✓';
   static String overdue(int n) => isArabic.value ? '$n متأخر' : '$n overdue';
   static String due(int n) => isArabic.value ? '$n مستحق' : '$n due';
   static String get details => isArabic.value ? 'التفاصيل' : 'Details';
@@ -58,9 +60,9 @@ class S {
   static String get priceEgpOptional => isArabic.value ? 'السعر (ج.م) — اختياري' : 'Price (EGP) — optional';
   static String kmLeft(int km) => isArabic.value ? '$km كم متبقي' : '$km km left';
   static String kmOverdue(int km) => isArabic.value ? '$km كم متأخر' : '$km km overdue';
-  static String get statusOk => 'OK';
-  static String get statusDue => isArabic.value ? 'مستحق' : 'DUE';
-  static String get statusOverdue => isArabic.value ? 'متأخر' : 'OVERDUE';
+  static String get statusOk => 'OK ✓';
+  static String get statusDue => isArabic.value ? 'مستحق ⚠' : 'DUE ⚠';
+  static String get statusOverdue => isArabic.value ? 'متأخر ❗' : 'OVERDUE ❗';
 
   // -- Settings --
   static String get data => isArabic.value ? 'البيانات' : 'Data';
@@ -101,4 +103,12 @@ class S {
   static String get deleteRecordQ => isArabic.value ? 'حذف السجل؟' : 'Delete record?';
   static String get deleteRecordMsg => isArabic.value ? 'حذف هذا السجل؟' : 'Delete this history entry?';
   static String get undo => isArabic.value ? 'تراجع' : 'Undo';
+
+  // -- Reset --
+  static String get resetAllData => isArabic.value ? 'مسح جميع البيانات' : 'Reset all data';
+  static String get resetConfirm => isArabic.value
+      ? 'سيتم حذف جميع المركبات والبيانات وإعادة الأنواع الافتراضية. متأكد؟'
+      : 'This will delete all vehicles & data and restore default types. Are you sure?';
+  static String get reset => isArabic.value ? 'مسح' : 'Reset';
+  static String get resetDone => isArabic.value ? 'تم المسح وإعادة الافتراضي' : 'Reset complete';
 }

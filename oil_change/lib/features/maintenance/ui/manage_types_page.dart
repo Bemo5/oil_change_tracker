@@ -152,6 +152,35 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
     }
   }
 
+  Future<void> _resetAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(S.resetAllData),
+        content: Text(S.resetConfirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel)),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(S.reset),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    await _vehicleRepo.clearAll();
+    await _typeRepo.clearAll();
+    await _itemRepo.clearAll();
+    await _recordRepo.clearAll();
+    await _typeRepo.seedDefaults();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.resetDone)));
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final box = HiveBoxes.maintenanceTypesBox();
@@ -195,6 +224,13 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _resetAll,
+                icon: const Icon(Icons.restart_alt, size: 18, color: Colors.red),
+                label: Text(S.resetAllData, style: const TextStyle(color: Colors.red)),
+                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
+              ),
 
               const SizedBox(height: 24),
               Text(S.maintenanceTypes, style: Theme.of(context).textTheme.titleMedium),
@@ -216,7 +252,7 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
                       child: ListTile(
                         dense: true,
                         title: Text(t.name),
-                        subtitle: Text('${t.defaultIntervalKm} km / ${t.defaultIntervalMonths} mo'),
+                        subtitle: Text('${t.defaultIntervalKm} كم / ${t.defaultIntervalMonths} شهر'),
                         trailing: IconButton(
                           icon: const Icon(Icons.close, size: 18),
                           onPressed: () => _confirmDelete(t),
