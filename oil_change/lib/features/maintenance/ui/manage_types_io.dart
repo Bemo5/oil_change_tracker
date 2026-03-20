@@ -14,6 +14,10 @@ Future<void> exportJson(String json) async {
   await File(savePath).writeAsString(json);
 }
 
+/// Clipboard stubs for non-web (not used).
+Future<void> exportToClipboard(String json) async {}
+Future<String?> importFromClipboard() async => null;
+
 /// Pick a JSON file and return its contents.
 Future<String?> pickAndReadJson() async {
   final result = await FilePicker.platform.pickFiles(

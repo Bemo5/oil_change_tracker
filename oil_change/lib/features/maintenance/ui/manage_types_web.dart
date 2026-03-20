@@ -16,6 +16,24 @@ Future<void> exportJson(String json) async {
   html.Url.revokeObjectUrl(url);
 }
 
+/// Copy JSON to clipboard (for easy sharing on mobile).
+Future<void> exportToClipboard(String json) async {
+  await html.window.navigator.clipboard?.writeText(json);
+}
+
+/// Read JSON from clipboard.
+Future<String?> importFromClipboard() async {
+  final text = await html.window.navigator.clipboard?.readText();
+  if (text == null || text.isEmpty) return null;
+  // Basic validation
+  try {
+    jsonDecode(text);
+    return text;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Pick a JSON file and return its contents.
 Future<String?> pickAndReadJson() async {
   final result = await FilePicker.platform.pickFiles(

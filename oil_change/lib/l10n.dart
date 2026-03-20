@@ -104,6 +104,15 @@ class S {
   static String get deleteRecordMsg => isArabic.value ? 'حذف هذا السجل؟' : 'Delete this history entry?';
   static String get undo => isArabic.value ? 'تراجع' : 'Undo';
   static String get search => isArabic.value ? 'بحث...' : 'Search...';
+  static String get copyData => isArabic.value ? 'نسخ البيانات' : 'Copy data';
+  static String get pasteData => isArabic.value ? 'لصق البيانات' : 'Paste data';
+  static String get copiedOk => isArabic.value ? 'تم النسخ — شاركه أو احفظه' : 'Copied — share or save it';
+  static String get pasteDataMsg => isArabic.value
+      ? 'انسخ بيانات النسخة الاحتياطية ثم اضغط لصق. سيتم استبدال جميع البيانات.'
+      : 'Copy the backup data first, then tap paste. This will replace ALL data.';
+  static String get invalidData => isArabic.value ? 'البيانات غير صالحة' : 'Invalid data';
+  static String get shareExport => isArabic.value ? 'مشاركة / تصدير' : 'Share / Export';
+  static String get restoreImport => isArabic.value ? 'استعادة / استيراد' : 'Restore / Import';
 
   // -- Reset --
   static String get resetAllData => isArabic.value ? 'مسح جميع البيانات' : 'Reset all data';

@@ -110,6 +110,55 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
     await _recordRepo.deleteByTypeId(t.id);
   }
 
+  // ── Copy to clipboard (easiest on iPhone) ──
+  Future<void> _copyToClipboard() async {
+    try {
+      final json = _backup.exportToJson();
+      await platform.exportToClipboard(json);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.copiedOk)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copy failed: $e')));
+    }
+  }
+
+  // ── Paste from clipboard ──
+  Future<void> _pasteFromClipboard() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(S.pasteData),
+        content: Text(S.pasteDataMsg),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(S.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(S.import_)),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final json = await platform.importFromClipboard();
+      if (json == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.invalidData)));
+        return;
+      }
+
+      await _backup.importFromJson(json);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.importedOk)));
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+    }
+  }
+
+  // ── File export ──
   Future<void> _export() async {
     try {
       final json = _backup.exportToJson();
@@ -123,6 +172,7 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
     }
   }
 
+  // ── File import ──
   Future<void> _import() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -202,27 +252,48 @@ class _ManageTypesPageState extends State<ManageTypesPage> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
             children: [
-              // Import / Export
-              Text(S.data, style: Theme.of(context).textTheme.titleMedium),
+              // ── Share / Export ──
+              Text(S.shareExport, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _export,
-                      icon: const Icon(Icons.upload_outlined, size: 18),
-                      label: Text(S.export_),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _import,
-                      icon: const Icon(Icons.download_outlined, size: 18),
-                      label: Text(S.import_),
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _copyToClipboard,
+                  icon: const Icon(Icons.copy, size: 18),
+                  label: Text(S.copyData),
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _export,
+                  icon: const Icon(Icons.save_alt, size: 18),
+                  label: Text(S.export_),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Restore / Import ──
+              Text(S.restoreImport, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _pasteFromClipboard,
+                  icon: const Icon(Icons.paste, size: 18),
+                  label: Text(S.pasteData),
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _import,
+                  icon: const Icon(Icons.file_open_outlined, size: 18),
+                  label: Text(S.import_),
+                ),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
