@@ -1,0 +1,40 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+        working-directory: oil_change
+
+      - run: flutter build web --base-href "/oil_change_tracker/"
+        working-directory: oil_change
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: oil_change/build/web
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

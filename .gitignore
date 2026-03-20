@@ -1,0 +1,19 @@
+# Flutter/Dart
+oil_change/.dart_tool/
+oil_change/.packages
+oil_change/build/
+oil_change/.flutter-plugins
+oil_change/.flutter-plugins-dependencies
+oil_change/windows/flutter/ephemeral/
+oil_change/android/.gradle/
+oil_change/android/local.properties
+oil_change/android/app/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
