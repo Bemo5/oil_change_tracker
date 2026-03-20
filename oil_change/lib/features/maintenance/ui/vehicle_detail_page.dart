@@ -29,6 +29,31 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   late Vehicle _vehicle;
 
+  // Track which categories are expanded
+  final Set<String> _expanded = {};
+
+  static const _categoryOrder = [
+    'زيوت وسوائل / Oils & Fluids',
+    'فلاتر / Filters',
+    'نظام الاشتعال / Ignition',
+    'فرامل / Brakes',
+    'إطارات وعفشة / Tires & Suspension',
+    'كهرباء وسيور / Electrical & Belts',
+    'نظام التبريد / Cooling',
+    'أخرى / Other',
+  ];
+
+  static const _catIcons = <String, IconData>{
+    'زيوت وسوائل / Oils & Fluids': Icons.water_drop,
+    'فلاتر / Filters': Icons.filter_alt,
+    'نظام الاشتعال / Ignition': Icons.bolt,
+    'فرامل / Brakes': Icons.do_not_touch,
+    'إطارات وعفشة / Tires & Suspension': Icons.tire_repair,
+    'كهرباء وسيور / Electrical & Belts': Icons.electrical_services,
+    'نظام التبريد / Cooling': Icons.ac_unit,
+    'أخرى / Other': Icons.build,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -83,10 +108,13 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       vehicleId: _vehicle.id,
       typeId: result.typeId,
       typeName: result.name,
+      category: result.category,
       intervalKm: result.intervalKm,
       intervalMonths: result.intervalMonths,
       savedOdometerKm: _vehicle.currentOdometerKm,
     );
+    // Auto-expand the category of the newly added item
+    _expanded.add(result.category.isEmpty ? 'أخرى / Other' : result.category);
     setState(() {});
   }
 
@@ -177,10 +205,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, -1.0),
-            child: Text(S.skip),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, -1.0), child: Text(S.skip)),
           FilledButton(
             onPressed: () {
               final p = double.tryParse(priceCtrl.text.trim());
@@ -255,27 +280,52 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   Color _statusColor(_Status s) {
     switch (s) {
-      case _Status.ok:
-        return Colors.green;
-      case _Status.due:
-        return Colors.amber;
-      case _Status.overdue:
-        return Colors.red;
+      case _Status.ok: return Colors.green;
+      case _Status.due: return Colors.amber;
+      case _Status.overdue: return Colors.red;
     }
+  }
+
+  // ── Group items by category ──
+
+  Map<String, List<MaintenanceItem>> _groupByCategory(List<MaintenanceItem> items) {
+    final map = <String, List<MaintenanceItem>>{};
+    for (final item in items) {
+      final cat = item.category.isEmpty ? 'أخرى / Other' : item.category;
+      map.putIfAbsent(cat, () => []).add(item);
+    }
+    // Sort items alphabetically within each category
+    for (final list in map.values) {
+      list.sort((a, b) => a.typeName.compareTo(b.typeName));
+    }
+    return map;
+  }
+
+  // Category summary: count overdue/due
+  _CatSummary _catSummary(List<MaintenanceItem> items) {
+    int overdue = 0, due = 0;
+    for (final item in items) {
+      final s = _status(item);
+      if (s == _Status.overdue) overdue++;
+      else if (s == _Status.due) due++;
+    }
+    return _CatSummary(overdue: overdue, due: due, total: items.length);
   }
 
   @override
   Widget build(BuildContext context) {
-    final items = _itemRepo.getForVehicle(_vehicle.id)
-      ..sort((a, b) {
-        final sa = _status(a).index;
-        final sb = _status(b).index;
-        if (sa != sb) return sb.compareTo(sa); // overdue first
-        return _remainingKm(a).compareTo(_remainingKm(b));
-      });
+    final items = _itemRepo.getForVehicle(_vehicle.id);
     final history = _recordRepo.getForVehicle(_vehicle.id);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final grouped = _groupByCategory(items);
+
+    // Sort categories in defined order
+    final sortedCats = _categoryOrder.where((c) => grouped.containsKey(c)).toList();
+    // Add any categories not in the predefined order
+    for (final c in grouped.keys) {
+      if (!sortedCats.contains(c)) sortedCats.add(c);
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(_vehicle.name)),
@@ -306,9 +356,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(S.checklist, style: tt.titleMedium),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           if (items.isEmpty)
             Padding(
@@ -326,9 +376,101 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               ),
             )
           else
-            ...items.map((item) => _buildItemTile(item, cs, tt)),
+            ...sortedCats.map((cat) {
+              final catItems = grouped[cat]!;
+              final summary = _catSummary(catItems);
+              final isOpen = _expanded.contains(cat);
+              final icon = _catIcons[cat] ?? Icons.build;
 
-          const SizedBox(height: 28),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111A33),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: cs.outlineVariant.withOpacity(0.15)),
+                ),
+                child: Column(
+                  children: [
+                    // Category header — tap to expand/collapse
+                    InkWell(
+                      borderRadius: isOpen
+                          ? const BorderRadius.vertical(top: Radius.circular(14))
+                          : BorderRadius.circular(14),
+                      onTap: () => setState(() {
+                        if (isOpen) {
+                          _expanded.remove(cat);
+                        } else {
+                          _expanded.add(cat);
+                        }
+                      }),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        child: Row(
+                          children: [
+                            Icon(icon, size: 20, color: cs.primary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                cat,
+                                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            // Status badges
+                            if (summary.overdue > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text('${summary.overdue}',
+                                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w800, fontSize: 11)),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            if (summary.due > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text('${summary.due}',
+                                    style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w800, fontSize: 11)),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            if (summary.overdue == 0 && summary.due == 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text('OK',
+                                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.w800, fontSize: 11)),
+                              ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              isOpen ? Icons.expand_less : Icons.expand_more,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Expanded items
+                    if (isOpen) ...[
+                      Divider(height: 1, color: cs.outlineVariant.withOpacity(0.15)),
+                      ...catItems.map((item) => _buildCompactItem(item, cs, tt)),
+                    ],
+                  ],
+                ),
+              );
+            }),
+
+          const SizedBox(height: 24),
           Text(S.history, style: tt.titleMedium),
           const SizedBox(height: 10),
 
@@ -363,108 +505,106 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  Widget _buildItemTile(MaintenanceItem item, ColorScheme cs, TextTheme tt) {
+  // ── Compact item tile inside a category dropdown ──
+
+  Widget _buildCompactItem(MaintenanceItem item, ColorScheme cs, TextTheme tt) {
     final remaining = _remainingKm(item);
     final s = _status(item);
     final sColor = _statusColor(s);
     final progress = _progressUsed(item);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111A33),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: s == _Status.ok
-              ? cs.outlineVariant.withOpacity(0.2)
-              : sColor.withOpacity(0.35),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Name + status + actions
           Row(
             children: [
               Expanded(
                 child: Text(item.typeName,
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: sColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(s.label,
-                    style: TextStyle(color: sColor, fontWeight: FontWeight.w800, fontSize: 11)),
+                    style: TextStyle(color: sColor, fontWeight: FontWeight.w800, fontSize: 10)),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+
+          // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              minHeight: 5,
+              minHeight: 4,
               value: progress,
               color: sColor,
               backgroundColor: cs.surfaceContainerHighest,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
+
+          // Info row
           Row(
             children: [
               Text(
                 remaining >= 0 ? S.kmLeft(remaining) : S.kmOverdue(remaining.abs()),
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant, fontSize: 11),
               ),
               const Spacer(),
-              if (item.lastPriceEgp != null)
-                Text('${item.lastPriceEgp!.toStringAsFixed(0)} EGP',
-                    style: tt.bodySmall?.copyWith(color: cs.primary)),
-              if (item.lastPriceEgp != null) const SizedBox(width: 10),
               if (item.lastServiceDate != null)
                 Text(DateFormat('d MMM yy').format(item.lastServiceDate!),
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant, fontSize: 11)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+
+          // Action buttons
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 34,
+                  height: 30,
                   child: FilledButton(
                     onPressed: () => _markDone(item),
                     style: FilledButton.styleFrom(
                       padding: EdgeInsets.zero,
-                      textStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                      textStyle: tt.labelSmall?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     child: Text(S.done),
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               SizedBox(
-                width: 34, height: 34,
+                width: 30, height: 30,
                 child: IconButton(
                   onPressed: () => _editInterval(item),
-                  icon: const Icon(Icons.tune, size: 18),
+                  icon: const Icon(Icons.tune, size: 16),
                   tooltip: S.editInterval,
                   padding: EdgeInsets.zero,
                 ),
               ),
               SizedBox(
-                width: 34, height: 34,
+                width: 30, height: 30,
                 child: IconButton(
                   onPressed: () => _removeItem(item),
-                  icon: const Icon(Icons.close, size: 18),
+                  icon: const Icon(Icons.close, size: 16),
                   tooltip: S.delete,
                   padding: EdgeInsets.zero,
                 ),
               ),
             ],
           ),
+
+          // Divider between items (not after last)
+          const SizedBox(height: 4),
         ],
       ),
     );
@@ -483,14 +623,20 @@ enum _Status {
   }
 }
 
+class _CatSummary {
+  final int overdue, due, total;
+  const _CatSummary({required this.overdue, required this.due, required this.total});
+}
+
 // ── Add item result ──
 
 class _AddItemResult {
   final String typeId;
   final String name;
+  final String category;
   final int intervalKm;
   final int intervalMonths;
-  _AddItemResult({required this.typeId, required this.name, required this.intervalKm, required this.intervalMonths});
+  _AddItemResult({required this.typeId, required this.name, this.category = '', required this.intervalKm, required this.intervalMonths});
 }
 
 // ── Categorized + searchable bottom sheet ──
@@ -529,7 +675,6 @@ class _AddItemSheetState extends State<_AddItemSheet> {
         t.category.toLowerCase().contains(q)).toList();
   }
 
-  // Group by category, preserving order
   Map<String, List<MaintenanceType>> get _grouped {
     final map = <String, List<MaintenanceType>>{};
     for (final t in _filtered) {
@@ -569,7 +714,6 @@ class _AddItemSheetState extends State<_AddItemSheet> {
         Text(S.addItem, style: tt.titleMedium),
         const SizedBox(height: 12),
 
-        // Search bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
@@ -586,7 +730,6 @@ class _AddItemSheetState extends State<_AddItemSheet> {
         ),
         const SizedBox(height: 8),
 
-        // Categorized list
         Expanded(
           child: ListView(
             controller: widget.scrollController,
@@ -613,6 +756,7 @@ class _AddItemSheetState extends State<_AddItemSheet> {
                   onTap: () => Navigator.pop(context, _AddItemResult(
                     typeId: t.id,
                     name: t.name,
+                    category: t.category,
                     intervalKm: t.defaultIntervalKm,
                     intervalMonths: t.defaultIntervalMonths,
                   )),

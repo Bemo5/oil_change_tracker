@@ -3,6 +3,7 @@ class MaintenanceItem {
   final String vehicleId;
   final String typeId;
   final String typeName;
+  final String category;
   final int intervalKm;
   final int intervalMonths;
   final int savedOdometerKm;
@@ -14,6 +15,7 @@ class MaintenanceItem {
     required this.vehicleId,
     required this.typeId,
     required this.typeName,
+    this.category = '',
     this.intervalKm = 5000,
     this.intervalMonths = 6,
     this.savedOdometerKm = 0,
@@ -23,6 +25,7 @@ class MaintenanceItem {
 
   MaintenanceItem copyWith({
     String? typeName,
+    String? category,
     int? intervalKm,
     int? intervalMonths,
     int? savedOdometerKm,
@@ -34,6 +37,7 @@ class MaintenanceItem {
       vehicleId: vehicleId,
       typeId: typeId,
       typeName: typeName ?? this.typeName,
+      category: category ?? this.category,
       intervalKm: intervalKm ?? this.intervalKm,
       intervalMonths: intervalMonths ?? this.intervalMonths,
       savedOdometerKm: savedOdometerKm ?? this.savedOdometerKm,
@@ -47,6 +51,7 @@ class MaintenanceItem {
         'vehicleId': vehicleId,
         'typeId': typeId,
         'typeName': typeName,
+        'category': category,
         'intervalKm': intervalKm,
         'intervalMonths': intervalMonths,
         'savedOdometerKm': savedOdometerKm,
@@ -59,6 +64,7 @@ class MaintenanceItem {
         vehicleId: (map['vehicleId'] ?? '') as String,
         typeId: (map['typeId'] ?? '') as String,
         typeName: (map['typeName'] ?? '') as String,
+        category: (map['category'] ?? '') as String,
         intervalKm: (map['intervalKm'] ?? 5000) as int,
         intervalMonths: (map['intervalMonths'] ?? 6) as int,
         savedOdometerKm: (map['savedOdometerKm'] ?? 0) as int,
