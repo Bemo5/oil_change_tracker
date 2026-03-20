@@ -148,7 +148,6 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? S.editVehicle : S.addVehicle),
-        leading: const Icon(Icons.directions_car),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
